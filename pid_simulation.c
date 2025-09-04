@@ -35,16 +35,20 @@ pid_ctrl(float setpoint, float actual, float kp,
 
 int
 main(void) {
-	float setpoint, actual, kp, ki, kd, *integral, *prev_error;
+	float setpoint, actual, kp, ki, kd, integral, prev_error;
 	float result = 0;
 	int counter = 0;
 	char *option = malloc(sizeof(char) * 8);
-	printf("pid simulation\np - p controller \npi - pi controller\n"
-			"pid - pid controller\n");
+	printf("pid simulation\n"
+			"p - p controller \n"
+			"pi - pi controller\n"
+			"pid - pid controller\n"
+			"q - quit\n");
 	while(1) {
 		printf("option: ");
 		fgets(option, sizeof(option), stdin);
 		option[strcspn(option, "\n")] = 0;
+		
 		if (strcmp(option, "p") == 0)  {
 			printf("setpoint: ");
 			scanf("%f", &setpoint);
@@ -66,13 +70,71 @@ main(void) {
 				}
 			}
 		}
-		else if(strcmp(option, "pi") == 0) {
+
+		else if(strcmp(option, "pi") == 0) {	
+			printf("setpoint: ");
+			scanf("%f", &setpoint);
+			printf("actual: ");
+			scanf("%f", &actual);
+			printf("kp: ");
+			scanf("%f", &kp);
+			printf("ki: ");
+			scanf("%f", &ki);
+			printf("integral: ");
+			scanf("%f", &integral);
+			result = pi_ctrl(setpoint, actual, kp, ki, &integral);
+			printf("counter - setpoint - actual - kp - ki - integral\n");
+			printf("%.2f", result);
+			while(1) {
+				counter++;
+				actual += result;
+				result = pi_ctrl(setpoint, actual, kp, ki, &integral);
+				printf("%d %f %f %f %f, %f\n", counter, setpoint, actual, kp,
+						ki, integral);
+				if(fabs(setpoint - actual) < 0.01) {
+					printf("good job\n");
+					printf("%d %f %f %f %f, %f\n", counter, setpoint, actual, kp,
+							ki, integral);
+					break;
+				}
+			}
 		}
+
 		else if(strcmp(option, "pid") == 0) {
+			printf("setpoint: ");
+			scanf("%f", &setpoint);
+			printf("actual: ");
+			scanf("%f", &actual);
+			printf("kp: ");
+			scanf("%f", &kp);
+			printf("ki: ");
+			scanf("%f", &ki);
+			printf("integral: ");
+			scanf("%f", integral);
+
+			prev_error = 0;
+			result = pid_ctrl(setpoint, actual, kp, ki, kd,
+					&integral, &prev_error);
+			while(1) {
+				counter++;
+				actual += result;
+				result = pid_ctrl(setpoint, actual, kp, ki, kd,
+						&integral, &prev_error);
+				printf("%d %f %f %f %f, %f\n", counter, setpoint, actual, kp,
+						ki, kd, &integral, &prev_error);
+				if(fabs(setpoint - actual) < 0.01) {
+					printf("good job\n");
+					break;
+				}
+			}
 		}
-		else {
+		else if(strcmp(option, "q") == 0) {
 			printf("goodbye :(\n");
 			break;
+		}
+
+		else {
+			printf("wrong option :(\n");
 		}
 	}
 }
