@@ -34,54 +34,90 @@ pid_ctrl(float setpoint, float actual, float kp,
 }
 
 int
-main(void) {
-	float setpoint, actual, kp, ki, kd, integral, prev_error;
+main() {
+	/* printf wont show after scanf on musl */
+	setvbuf(stdout, NULL, _IONBF, 0);
+
+	float setpoint, actual, kp, ki, kd, integral = 0, prev_error = 0;
 	float result = 0;
 	int counter = 0;
-	char *option = malloc(sizeof(char) * 8);
+	char option[6];
+	char input[100];
+
 	printf("pid simulation\n"
-			"p - p controller \n"
-			"pi - pi controller\n"
-			"pid - pid controller\n"
-			"q - quit\n");
+		"p - p controller \n"
+		"pi - pi controller\n"
+		"pid - pid controller\n"
+		"q - quit\n");
+	
 	while(1) {
-		printf("option: ");
+		fprintf(stdout, "option: ");
 		fgets(option, sizeof(option), stdin);
-		option[strcspn(option, "\n")] = 0;
-		
+		option[strcspn(option, "\n")] = '\0';
+
 		if (strcmp(option, "p") == 0)  {
+			
 			printf("setpoint: ");
-			scanf("%f", &setpoint);
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &setpoint);
+
 			printf("actual: ");
-			scanf("%f", &actual);
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &actual);
+
+
 			printf("kp: ");
-			scanf("%f", &kp);
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &kp);
+
 			result = p_ctrl(setpoint, actual, kp);
-			printf("hasilnya: %.2f\n", result);
+			printf("counter - setpoint - actual - kp - error(?)\n");
+			printf("%.2f\n", result);
 			while(1) {
 				counter++;
 				actual += result;
-				printf("%d %f %f %f\n", counter, setpoint, actual, kp);
+				printf("%d %f %f %f %f\n", counter, setpoint, actual, kp, setpoint-actual);
 				result = p_ctrl(setpoint, actual, kp);
 				if(fabs(setpoint - actual) < 0.01) {
+					counter++;
 					printf("good job :)\n");
-					printf("%d %f %f %f\n", counter, setpoint, actual, result);
+					printf("%d %f %f %f %f\n", counter, setpoint, actual, result, setpoint-actual);
+					counter = 0;
 					break;
 				}
 			}
 		}
 
-		else if(strcmp(option, "pi") == 0) {	
+		else if(strcmp(option, "pi") == 0) {
+
 			printf("setpoint: ");
-			scanf("%f", &setpoint);
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &setpoint);
+
 			printf("actual: ");
-			scanf("%f", &actual);
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &actual);
+
 			printf("kp: ");
-			scanf("%f", &kp);
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &kp);
+		
 			printf("ki: ");
-			scanf("%f", &ki);
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &ki);
+			
 			printf("integral: ");
-			scanf("%f", &integral);
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &integral);
+				
 			result = pi_ctrl(setpoint, actual, kp, ki, &integral);
 			printf("counter - setpoint - actual - kp - ki - integral\n");
 			printf("%.2f", result);
@@ -92,9 +128,11 @@ main(void) {
 				printf("%d %f %f %f %f, %f\n", counter, setpoint, actual, kp,
 						ki, integral);
 				if(fabs(setpoint - actual) < 0.01) {
+					counter++;
 					printf("good job\n");
 					printf("%d %f %f %f %f, %f\n", counter, setpoint, actual, kp,
 							ki, integral);
+					counter = 0;
 					break;
 				}
 			}
@@ -110,7 +148,7 @@ main(void) {
 			printf("ki: ");
 			scanf("%f", &ki);
 			printf("integral: ");
-			scanf("%f", integral);
+			scanf("%f", &integral);
 
 			prev_error = 0;
 			result = pid_ctrl(setpoint, actual, kp, ki, kd,
@@ -120,10 +158,11 @@ main(void) {
 				actual += result;
 				result = pid_ctrl(setpoint, actual, kp, ki, kd,
 						&integral, &prev_error);
-				printf("%d %f %f %f %f, %f\n", counter, setpoint, actual, kp,
-						ki, kd, &integral, &prev_error);
+				printf("%d %f %f %f %f %f %f %f\n", counter, setpoint, actual, kp,
+						ki, kd, integral, prev_error);
 				if(fabs(setpoint - actual) < 0.01) {
 					printf("good job\n");
+					counter = 0;
 					break;
 				}
 			}
@@ -137,4 +176,5 @@ main(void) {
 			printf("wrong option :(\n");
 		}
 	}
+	return 0;
 }
