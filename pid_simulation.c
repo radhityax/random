@@ -5,6 +5,8 @@
 #include <string.h>
 #include <math.h>
 
+#define err_tolerant 0.01
+
 float
 p_ctrl(float setpoint, float actual, float kp)
 {
@@ -81,7 +83,7 @@ main() {
 				actual += result;
 				printf("%d %f %f %f %f\n", counter, setpoint, actual, kp, setpoint-actual);
 				result = p_ctrl(setpoint, actual, kp);
-				if(fabs(setpoint - actual) < 0.01) {
+				if(fabs(setpoint - actual) < err_tolerant) {
 					counter++;
 					printf("good job :)\n");
 					printf("%d %f %f %f %f\n", counter, setpoint, actual, result, setpoint-actual);
@@ -112,12 +114,13 @@ main() {
 			fgets(input, sizeof(input), stdin);
 			input[strcspn(input, "\n")] = '\0';
 			sscanf(input, "%f", &ki);
-			
+			/*
 			printf("integral: ");
 			fgets(input, sizeof(input), stdin);
 			input[strcspn(input, "\n")] = '\0';
 			sscanf(input, "%f", &integral);
-				
+			*/
+			integral = 0;
 			result = pi_ctrl(setpoint, actual, kp, ki, &integral);
 			printf("counter - setpoint - actual - kp - ki - integral\n");
 			printf("%.2f", result);
@@ -127,7 +130,7 @@ main() {
 				result = pi_ctrl(setpoint, actual, kp, ki, &integral);
 				printf("%d %f %f %f %f, %f\n", counter, setpoint, actual, kp,
 						ki, integral);
-				if(fabs(setpoint - actual) < 0.01) {
+				if(fabs(setpoint - actual) < err_tolerant) {
 					counter++;
 					printf("good job\n");
 					printf("%d %f %f %f %f, %f\n", counter, setpoint, actual, kp,
@@ -140,16 +143,32 @@ main() {
 
 		else if(strcmp(option, "pid") == 0) {
 			printf("setpoint: ");
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &setpoint);
 			scanf("%f", &setpoint);
-			printf("actual: ");
-			scanf("%f", &actual);
-			printf("kp: ");
-			scanf("%f", &kp);
-			printf("ki: ");
-			scanf("%f", &ki);
-			printf("integral: ");
-			scanf("%f", &integral);
 
+			printf("actual: ");
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &actual);
+
+			printf("kp: ");
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &kp);
+
+			printf("ki: ");
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &ki);
+
+			printf("kd: ");
+			fgets(input, sizeof(input), stdin);
+			input[strcspn(input, "\n")] = '\0';
+			sscanf(input, "%f", &kd);
+
+			integral = 0;
 			prev_error = 0;
 			result = pid_ctrl(setpoint, actual, kp, ki, kd,
 					&integral, &prev_error);
@@ -160,7 +179,7 @@ main() {
 						&integral, &prev_error);
 				printf("%d %f %f %f %f %f %f %f\n", counter, setpoint, actual, kp,
 						ki, kd, integral, prev_error);
-				if(fabs(setpoint - actual) < 0.01) {
+				if(fabs(setpoint - actual) < err_tolerant) {
 					printf("good job\n");
 					counter = 0;
 					break;
