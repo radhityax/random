@@ -1,11 +1,29 @@
+/*
+ * setpoint -> e(t) -> controller: (p,pi,pid) -> u(t) -> plant -> out(y(t))
+ *		^					   ^
+ *		|					   |
+ *		|----------- feedback ---------------------|
+ * setpoint : the value that we want
+ * e(t) : difference between setpoint and actual value
+ * plant : an actual system that we give a control, then produces an output
+*/
+
 #define _USE_MATH_DEFINES
 
 #include <stdio.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
 #define err_tolerant 0.01
+
+/* konstanta waktu(?) */
+#define tau 1.0
+/* gain sistem (?) */
+#define k 2.0
+
+pthread_t thread1;
 
 float
 p_ctrl(float setpoint, float actual, float kp)
@@ -35,6 +53,15 @@ pid_ctrl(float setpoint, float actual, float kp,
 	return kp * error + ki * *integral + kd * derivative;
 }
 
+/* transfer function ordo pertama / first order system ?? */
+float G(double s) {
+	return (tau * s / 1) / K;
+}
+
+void
+activity(void *arg) {
+}
+
 int
 main() {
 	/* printf wont show after scanf on musl */
@@ -42,11 +69,11 @@ main() {
 
 	float setpoint, actual, kp, ki, kd, integral = 0, prev_error = 0;
 	float result = 0;
-	int counter = 0;
+	unsigned int counter = 0;
 	char option[6];
 	char input[100];
 
-	printf("pid simulation\n"
+	fprintf(stdout, "pid simulation\n"
 		"p - p controller \n"
 		"pi - pi controller\n"
 		"pid - pid controller\n"
@@ -59,29 +86,33 @@ main() {
 
 		if (strcmp(option, "p") == 0)  {
 			
-			printf("setpoint: ");
+			fprintf(stdout, "setpoint: ");
 			fgets(input, sizeof(input), stdin);
 			input[strcspn(input, "\n")] = '\0';
 			sscanf(input, "%f", &setpoint);
 
-			printf("actual: ");
+			fprintf(stdout, "actual: ");
 			fgets(input, sizeof(input), stdin);
 			input[strcspn(input, "\n")] = '\0';
 			sscanf(input, "%f", &actual);
 
 
-			printf("kp: ");
+			fprintf(stdout, "kp: ");
 			fgets(input, sizeof(input), stdin);
 			input[strcspn(input, "\n")] = '\0';
 			sscanf(input, "%f", &kp);
 
 			result = p_ctrl(setpoint, actual, kp);
-			printf("counter - setpoint - actual - kp - error(?)\n");
-			printf("%.2f\n", result);
+			fprintf(stdout, "counter - setpoint - ",
+					"actual - kp - error\n");
+			fprintf(stdout, "%d %f %f %f %f\n", counter, 
+				setpoint, actual, kp, setpoint-actual);
 			while(1) {
 				counter++;
 				actual += result;
-				printf("%d %f %f %f %f\n", counter, setpoint, actual, kp, setpoint-actual);
+				fprintf(stdout, "%d %f %f %f %f\n", 
+					counter, setpoint, actual, 
+					kp, setpoint-actual);
 				result = p_ctrl(setpoint, actual, kp);
 				if(fabs(setpoint - actual) < err_tolerant) {
 					counter++;
@@ -109,17 +140,17 @@ main() {
 			fgets(input, sizeof(input), stdin);
 			input[strcspn(input, "\n")] = '\0';
 			sscanf(input, "%f", &kp);
-		
+
 			printf("ki: ");
 			fgets(input, sizeof(input), stdin);
 			input[strcspn(input, "\n")] = '\0';
 			sscanf(input, "%f", &ki);
 			/*
-			printf("integral: ");
-			fgets(input, sizeof(input), stdin);
-			input[strcspn(input, "\n")] = '\0';
-			sscanf(input, "%f", &integral);
-			*/
+			   printf("integral: ");
+			   fgets(input, sizeof(input), stdin);
+			   input[strcspn(input, "\n")] = '\0';
+			   sscanf(input, "%f", &integral);
+			   */
 			integral = 0;
 			result = pi_ctrl(setpoint, actual, kp, ki, &integral);
 			printf("counter - setpoint - actual - kp - ki - integral\n");
