@@ -22,9 +22,12 @@
 #define tau 1.0
 /* gain sistem (?) */
 #define k 2.0
-
+#define dt 0.1
+#define little_omega_n 0
+#define xi 0
 pthread_t thread1;
 
+/* u(t) = kp * e(t) */
 float
 p_ctrl(float setpoint, float actual, float kp)
 {
@@ -54,9 +57,18 @@ pid_ctrl(float setpoint, float actual, float kp,
 }
 
 /* transfer function ordo pertama / first order system ?? */
-float G(double s) {
-	return (tau * s / 1) / K;
+/* DALAM MODEL LAPLANCE */
+float first_order(double s) {
+	return k / (1 + tau * s);
 }
+
+/* transfer function ordo kedua / second order system ?? */
+/* DALAM MODEL LAPLANCE */
+float second_order(double s) {
+	return little_omega_n * little_omega_n / 
+	(s * s + 2 * xi * little_omega_n * s + little_omega_n * little_omega_n);
+}
+
 
 void
 activity(void *arg) {
@@ -109,15 +121,18 @@ main() {
 				setpoint, actual, kp, setpoint-actual);
 			while(1) {
 				counter++;
-				actual += result;
+				result = p_ctrl(setpoint, actual, kp);
+				/* ga tau ini nulis apa, harusnya di-diskrit?*/
+				actual = actual + (dt/tau) * (-actual + k * result);
 				fprintf(stdout, "%d %f %f %f %f\n", 
 					counter, setpoint, actual, 
 					kp, setpoint-actual);
-				result = p_ctrl(setpoint, actual, kp);
 				if(fabs(setpoint - actual) < err_tolerant) {
 					counter++;
 					printf("good job :)\n");
-					printf("%d %f %f %f %f\n", counter, setpoint, actual, result, setpoint-actual);
+					fprintf(stdout, "%d %f %f %f %f\n",
+						counter, setpoint, actual, 
+						result, setpoint-actual);
 					counter = 0;
 					break;
 				}
@@ -153,19 +168,22 @@ main() {
 			   */
 			integral = 0;
 			result = pi_ctrl(setpoint, actual, kp, ki, &integral);
-			printf("counter - setpoint - actual - kp - ki - integral\n");
+			fprintf(stdout, "counter - setpoint - actual -" 
+				"kp - ki - integral\n");
 			printf("%.2f", result);
 			while(1) {
 				counter++;
-				actual += result;
-				result = pi_ctrl(setpoint, actual, kp, ki, &integral);
-				printf("%d %f %f %f %f, %f\n", counter, setpoint, actual, kp,
-						ki, integral);
+				result = pi_ctrl(setpoint, actual, kp, ki,
+						 &integral);
+				fprintf(stdout, "%d %f %f %f %f, %f\n", 
+					counter, setpoint, actual, kp,
+					ki, integral);
 				if(fabs(setpoint - actual) < err_tolerant) {
 					counter++;
-					printf("good job\n");
-					printf("%d %f %f %f %f, %f\n", counter, setpoint, actual, kp,
-							ki, integral);
+					fprintf(stdout, "good job\n");
+					fprintf(stdout, "%d %f %f %f %f, %f\n",
+						counter, setpoint, actual, kp,
+						ki, integral);
 					counter = 0;
 					break;
 				}
