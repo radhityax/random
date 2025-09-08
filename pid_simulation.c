@@ -40,7 +40,7 @@ pi_ctrl(float setpoint, float actual, float kp,
 	float ki, float *integral)
 {
 	float error = setpoint - actual;
-	*integral += error;
+	*integral += error * dt;
 	return kp * error + ki * *integral;
 }
 
@@ -50,8 +50,8 @@ pid_ctrl(float setpoint, float actual, float kp,
 	float *prev_error)
 {
 	float error = setpoint - actual;
-	*integral += error;
-	float derivative = error - *prev_error;
+	*integral += error * dt;
+	float derivative = error - *prev_error / dt;
 	*prev_error = error;
 	return kp * error + ki * *integral + kd * derivative;
 }
@@ -115,8 +115,7 @@ main() {
 			sscanf(input, "%f", &kp);
 
 			result = p_ctrl(setpoint, actual, kp);
-			fprintf(stdout, "counter - setpoint - ",
-					"actual - kp - error\n");
+			fprintf(stdout, "counter - setpoint - actual - kp - error\n");
 			fprintf(stdout, "%d %f %f %f %f\n", counter, 
 				setpoint, actual, kp, setpoint-actual);
 			while(1) {
@@ -175,15 +174,16 @@ main() {
 				counter++;
 				result = pi_ctrl(setpoint, actual, kp, ki,
 						 &integral);
+				actual = actual + (dt/tau) * (-actual + k * result);
 				fprintf(stdout, "%d %f %f %f %f, %f\n", 
-					counter, setpoint, actual, kp,
-					ki, integral);
+						counter, setpoint, actual, kp,
+						ki, integral);
 				if(fabs(setpoint - actual) < err_tolerant) {
 					counter++;
 					fprintf(stdout, "good job\n");
 					fprintf(stdout, "%d %f %f %f %f, %f\n",
-						counter, setpoint, actual, kp,
-						ki, integral);
+							counter, setpoint, actual, kp,
+							ki, integral);
 					counter = 0;
 					break;
 				}
@@ -195,7 +195,6 @@ main() {
 			fgets(input, sizeof(input), stdin);
 			input[strcspn(input, "\n")] = '\0';
 			sscanf(input, "%f", &setpoint);
-			scanf("%f", &setpoint);
 
 			printf("actual: ");
 			fgets(input, sizeof(input), stdin);
@@ -223,7 +222,7 @@ main() {
 					&integral, &prev_error);
 			while(1) {
 				counter++;
-				actual += result;
+				actual = actual + (dt/tau) * (-actual + k * result);
 				result = pid_ctrl(setpoint, actual, kp, ki, kd,
 						&integral, &prev_error);
 				printf("%d %f %f %f %f %f %f %f\n", counter, setpoint, actual, kp,
