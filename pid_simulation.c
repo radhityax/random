@@ -23,8 +23,8 @@
 /* gain sistem (?) */
 #define k 2.0
 #define dt 0.1
-#define little_omega_n 0
-#define xi 0
+#define little_omega_n 1.0
+#define xi 1.0
 pthread_t thread1;
 
 /* u(t) = kp * e(t) */
@@ -51,7 +51,7 @@ pid_ctrl(float setpoint, float actual, float kp,
 {
 	float error = setpoint - actual;
 	*integral += error * dt;
-	float derivative = error - *prev_error / dt;
+	float derivative = (error - *prev_error) / dt;
 	*prev_error = error;
 	return kp * error + ki * *integral + kd * derivative;
 }
